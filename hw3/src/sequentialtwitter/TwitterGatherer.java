@@ -20,8 +20,8 @@ public abstract class TwitterGatherer {
 		return userNames;
 	}
 	
-	protected String generateCall(String userName, int page){
-		return "http://twitter.com/statuses/user_timeline/" + userName + ".atom?count=200&page=" + page;
+	protected String generateURL(String userName, int page){
+		return "http://twitter.com/statuses/user_timeline/" + userName + ".json?count=200&page=" + page;
 	}
 
 	public abstract void getTweets(ArrayList<String> userNames) throws IOException;
