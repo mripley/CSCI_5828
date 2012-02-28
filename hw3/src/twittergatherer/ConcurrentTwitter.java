@@ -16,7 +16,7 @@ public class ConcurrentTwitter {
 		
 		final long start = System.nanoTime();
 		try {
-			userNames = twitter.getUserNames("users.txt");
+			userNames = ConcurrentGatherer.getUserNames("users.txt");
 			twitter.getTweets(userNames);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

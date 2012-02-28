@@ -1,11 +1,8 @@
 package twittergatherer;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +11,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.ExecutionException;
 
 public class ConcurrentGatherer extends TwitterGatherer {
@@ -40,6 +36,10 @@ public class ConcurrentGatherer extends TwitterGatherer {
 						getTweetsForUser(user, maxThreads);
 					}catch(IOException e){
 						status = -1;
+					} catch (ExecutionException e) {
+						System.out.println("Caught execution exception due to rate limiting");
+						// we are being rate limited shut down as quickly as possible 
+						threadPool.shutdownNow();
 					}
 					return status;
 				}
@@ -59,8 +59,7 @@ public class ConcurrentGatherer extends TwitterGatherer {
 			
 	}
 
-	public void getTweetsForUser(String userName, int maxThreads) throws IOException{
-		BufferedReader urlReader;
+	public void getTweetsForUser(String userName, int maxThreads) throws IOException, ExecutionException{
 		StringBuffer tweet = new StringBuffer();
 		
 		final ExecutorService threadPool = Executors.newFixedThreadPool(maxThreads);
@@ -68,69 +67,32 @@ public class ConcurrentGatherer extends TwitterGatherer {
 		BufferedWriter writer = new BufferedWriter(new FileWriter(userName));
 		tweet.setLength(0); // clear the current buffer 
 			
-			// loop over all 16 pages for each user
-			for(int i =0; i< 16; i++){
-				System.out.println("Working on user " + userName + " page: " + i);
-				final URL url = new URL(this.generateURL(userName, i+1));
-				try {
-					pages.add(new Callable<String>(){
-						public String call(){
-							try {
-								return getPageOfTweets(url);
-							} catch (ExecutionException e) {
-								return "ERROR";
-							}
-						}
-						
-					});
-					
-					List<Future<String>> allPages = threadPool.invokeAll(pages, 1000, TimeUnit.SECONDS);
-					
-					// concatenate all the strings
-					for(Future<String> s : allPages){
-						tweet.append(s.get());
-					}
-				} catch (ExecutionException e) {
-					// in the event that we are being rate limited bail out.
-					writer.write(tweet.toString());
-					writer.close();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+		// loop over all 16 pages for each user and create a task for each page. 
+		for(int i =0; i< 16; i++){
+			System.out.println("Working on user " + userName + " page: " + i);
+			final URL url = new URL(this.generateURL(userName, i+1));
+			pages.add(new TwitterPageCallable(url));
+		}
+		
+		List<Future<String>> allPages;
+		try {
+			allPages = threadPool.invokeAll(pages, 1000, TimeUnit.SECONDS);
+			
+			// concatenate all the strings
+			for(Future<String> s : allPages){
+				tweet.append(s.get());
 			}
+		} catch (InterruptedException e) {
+			System.out.println("Caught interruptedException");
+		} catch (ExecutionException e) {
+			System.out.println("Caught exceution exception due to rate limiting");
+			throw new ExecutionException("Being rate limited bailing out", e);
+		}
+		finally{	
 			// dump the entire buffer to the file 
 			writer.write(tweet.toString());
 			writer.close();
-	}
-	
-	public String getPageOfTweets(URL url) throws ExecutionException{
-		
-		BufferedReader urlReader;
-		HttpURLConnection connection;
-		String retval = "";
-		int status = 0;
-		try {
-			connection = (HttpURLConnection) url.openConnection();
-	        connection.setRequestMethod("GET");
-	        connection.setDoOutput(true);
-	        connection.connect();
-
-	        status = connection.getResponseCode();
-			urlReader= new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			retval = urlReader.readLine();
-			urlReader.close();
-		} catch (IOException e) {
-			
-			System.out.println("Caught IOException with http status: "+status);
-			// so if something other than rate limiting happened
-			if (status == 400){
-				// we're being rate limited bail out now before we make things worse. 
-				throw new ExecutionException("Being rate limited bailing out", e);
-			}
+			threadPool.shutdownNow();
 		}
-
-		return retval;
 	}
-	
 }
