@@ -37,7 +37,7 @@ public class ConcurrentGatherer extends TwitterGatherer {
 					}catch(IOException e){
 						status = -1;
 					} catch (ExecutionException e) {
-						System.out.println("Caught execution exception due to rate limiting");
+						System.out.println("Caught execution exception in call method for users");
 						// we are being rate limited shut down as quickly as possible 
 						threadPool.shutdownNow();
 					}
