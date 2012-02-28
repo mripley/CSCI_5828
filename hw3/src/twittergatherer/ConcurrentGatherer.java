@@ -28,6 +28,8 @@ public class ConcurrentGatherer extends TwitterGatherer {
 		final ExecutorService threadPool = Executors.newFixedThreadPool(userNames.size());
 		ArrayList<Callable<Integer>> userTasks = new ArrayList<Callable<Integer>>();
 		final int maxThreads = numThreads / userNames.size() <= 0 ? 1 : numThreads / userNames.size();
+		
+		// loop through all the users and add a task for each
 		for(final String user : userNames){
 			userTasks.add(new Callable<Integer>() {
 				public Integer call() {
@@ -50,8 +52,7 @@ public class ConcurrentGatherer extends TwitterGatherer {
 			// invoke all threads
 			final List<Future<Integer>> statuses = threadPool.invokeAll(userTasks, 1000, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println("Caught Interrupted Exception");
 		}
 		finally{
 			threadPool.shutdown();	

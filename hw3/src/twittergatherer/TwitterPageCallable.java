@@ -21,19 +21,21 @@ public class TwitterPageCallable implements Callable<String> {
 	}
 	
 	public String getPageOfTweets(URL url) throws ExecutionException{
-		
 		BufferedReader urlReader;
 		HttpURLConnection connection;
 		String retval = "";
 		int status = 0;
 		try {
+			// open the http connection to twitter
 			connection = (HttpURLConnection) url.openConnection();
 	        connection.setRequestMethod("GET");
 	        connection.setDoOutput(true);
 	        connection.connect();
-
+	        
+	        // get the status of the connection so we can see if we are being rate limited
 	        status = connection.getResponseCode();
 			urlReader= new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			// read the line. Since we are requesting JSON everything is on the same line
 			retval = urlReader.readLine();
 			urlReader.close();
 		} catch (IOException e) {

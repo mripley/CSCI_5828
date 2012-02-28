@@ -14,11 +14,10 @@ public class SequentialTwitter {
 		SequentialGatherer tweetGatherer = new SequentialGatherer();
 		final long start = System.nanoTime();
 		try {
-			ArrayList<String> userNames = tweetGatherer.getUserNames("users.txt");
+			ArrayList<String> userNames = SequentialGatherer.getUserNames("users.txt");
 			tweetGatherer.getTweets(userNames);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println("Caught IO exception in main");
 		} 
 		final long end = System.nanoTime();
 		

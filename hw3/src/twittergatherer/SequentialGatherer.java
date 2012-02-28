@@ -17,8 +17,6 @@ public class SequentialGatherer extends TwitterGatherer {
 		URL url;
 		BufferedReader urlReader;
 		StringBuffer tweet = new StringBuffer();
-		
-		String line;
 		for (String user : userNames){
 			BufferedWriter writer = new BufferedWriter(new FileWriter(user));
 			tweet.setLength(0); // clear the current buffer 
@@ -36,17 +34,13 @@ public class SequentialGatherer extends TwitterGatherer {
 			        connection.connect();
 			        status = connection.getResponseCode();
 					urlReader= new BufferedReader(new InputStreamReader(connection.getInputStream()));
-					tweet.append("test");//urlReader.readLine());
+					tweet.append(urlReader.readLine());
 					urlReader.close();
 				} catch(IOException e){
 					
 					// so if something other than rate limiting happened
 					System.out.println("Caught IOException with http status: "+status);
-					if(status != 400){
-						// undo the page increment so we'll issue the request again
-						//i--;
-					}
-					else{
+					if(status == 400){
 						// we are probably being rate limited. Write what we have and exit
 						writer.write(tweet.toString());
 						writer.close();
