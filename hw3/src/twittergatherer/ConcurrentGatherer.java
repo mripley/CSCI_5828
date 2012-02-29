@@ -24,7 +24,6 @@ public class ConcurrentGatherer extends TwitterGatherer {
 		
 		System.out.println("num threads: " + numThreads);
 		
-		
 		final ExecutorService threadPool = Executors.newFixedThreadPool(userNames.size());
 		ArrayList<Callable<Integer>> userTasks = new ArrayList<Callable<Integer>>();
 		final int maxThreads = numThreads / userNames.size() <= 0 ? 1 : numThreads / userNames.size();
